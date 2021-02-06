@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Home.css';
-import AddCircleRoundedIcon from '@material-ui/icons/AddCircleRounded';
+import TimerIcon from '@material-ui/icons/Timer';
 import FreeBreakfastIcon from '@material-ui/icons/FreeBreakfast';
 import FastfoodRoundedIcon from '@material-ui/icons/FastfoodRounded';
 import PlayArrowRoundedIcon from '@material-ui/icons/PlayArrowRounded';
@@ -21,14 +21,12 @@ const toStringMMSS = remaining => {
   return minutes + ":" + seconds;
 };
 const toTwoDigits = number => {
-  return number < 10 ? "0" + number: number;
+  return number < 10 ? "0" + number : number;
 };
-
-const isPomodoroState = state => {
+const isPomodoro = state => {
   return state.componentName === "pomodoro";
 }
 
-/* TODO refactor clock, conditions etc. */
 const Home = () => {
 
   const [states] = useState(
@@ -39,102 +37,105 @@ const Home = () => {
     });
   const [state, setState] = useState(states.pomodoro);
   const [pomodoroCount, setPomodoroCount] = useState(0);
-  const [remaining, setRemaining] = useState(toSeconds(state.min));
+  const [remainingSeconds, setRemainingSeconds] = useState(toSeconds(state.min));
   const [isActive, setActive] = useState(false);
 
   const start = () => {
     if (!isActive) {
       setActive(true);
-      setRemaining(r => r - 1);
+      setRemainingSeconds(seconds => seconds - 1);
     }
   };
   const stop = () => {
-    if (remaining > 10) {
+    if (remainingSeconds > 10) {
       setActive(false);
     }
   };
-  const stateChange = async (st, active) => {
+  const changeState = async (st, active) => {
     setActive(active);
 
     await delay(1500);
 
     setState(st);
-    setRemaining(toSeconds(st.min));
+    setRemainingSeconds(toSeconds(st.min));
   };
-  const changeToNextState = () => {
-    if (isPomodoroState(state)) {
-      (pomodoroCount !== 0 && (pomodoroCount + 1) % 4 === 0
-        ? () => stateChange(states.pauseLong, true)
-        : () => stateChange(states.pauseShort, true)
-      )();
-    } else {
-      stateChange(states.pomodoro, true);
-    }
-  };
-  const toggleStartStop = () => {
+  const toggleRunning = () => {
     if (!isActive) {
-      return <div className="startstop" onClick={() => start()}>
+      return <div className="running-toggle" onClick={() => start()}>
                 <PlayArrowRoundedIcon fontSize="large" htmlColor="#ffffff" />
               </div>;
     } else {
-      return <div className="startstop" onClick={() => stop()}>
+      return <div className="running-toggle" onClick={() => stop()}>
                 <StopRoundedIcon fontSize="large" htmlColor="#ffffff" />
               </div>;
     }
   };
- 
+  const transitionToNextState = () => {
+    if (isPomodoro(state)) {
+      (pomodoroCount !== 0 && (pomodoroCount + 1) % 4 === 0
+        ? () => changeState(states.pauseLong, true)
+        : () => changeState(states.pauseShort, true)
+      )();
+    } else {
+      changeState(states.pomodoro, true);
+    }
+  };
+
   useEffect(() => {
-    if (isActive && remaining > 0){
-      const timeout = () => {
-        setRemaining(r => r - 1);
-      };
-      setTimeout(timeout, 1000);
+    if (isActive && remainingSeconds > 0){
+      setTimeout(() => {
+        setRemainingSeconds(seconds => seconds - 1);
+      }, 1000);
     }
     
-    if (remaining < 1){
-      if (isPomodoroState(state)) {
-        setPomodoroCount(p => p + 1);
+    if (remainingSeconds < 1){
+      if (isPomodoro(state)) {
+        setPomodoroCount(pomodoro => pomodoro + 1);
       }
-      changeToNextState();
+      transitionToNextState();
     }
-  }, [remaining]);
+  }, [remainingSeconds]);
 
-  const percent = 1 - ((remaining) / toSeconds(state.min));
+  const percent = 1 - ((remainingSeconds) / toSeconds(state.min));
 
   return (
     <div className={"container " + (state.componentName)}>
-      <header></header>
       <main>
         <section className="content ">
           <section className="clock">
             <section className="timer">
-            <div className="symbol countdown">{toStringMMSS(remaining)}</div>
-            <div className={"symbol one " + (remaining < 8 || percent >= 0.125 ? 'passed' : '')}>|</div>
-            <div className={"symbol two " + (remaining < 7 || percent >= 0.25 ? 'passed' : '')}>|</div>
-            <div className={"symbol three " + (remaining < 6 || percent >= 0.375 ? 'passed' : '')}>|</div>
-            <div className={"symbol four " + (remaining < 5 || percent >= 0.5 ? 'passed' : '')}>|</div>
-            <div className={"symbol five " + (remaining < 4 || percent >= 0.625 ? 'passed' : '')}>|</div>
-            <div className={"symbol six " + (remaining < 3 || percent >= 0.75 ? 'passed' : '')}>|</div>
-            <div className={"symbol seven " + (remaining < 2 || percent >= 0.875 ? 'passed' : '')}>|</div>
-            <div className={"symbol eight " + (remaining < 1 || percent >= 1 ? 'passed' : '')}>|</div>
-          </section>
-          <section className="board">
-            <section className="board-top">
-              <div className="board-btn" onClick={() => stateChange(states.pomodoro, false)}><AddCircleRoundedIcon fontSize="large" htmlColor="#ffffff" /></div>
-              <div className="board-btn" onClick={() => stateChange(states.pauseShort, false)}><FreeBreakfastIcon fontSize="large"  htmlColor="#ffffff" /></div>
-              <div className="board-btn" onClick={() => stateChange(states.pauseLong, false)}><FastfoodRoundedIcon fontSize="large" htmlColor="#ffffff" /></div>
+              <div className="symbol countdown">{toStringMMSS(remainingSeconds)}</div>
+              <div className={"symbol one " + (remainingSeconds < 8 || percent >= 0.125 ? 'passed' : '')}>|</div>
+              <div className={"symbol two " + (remainingSeconds < 7 || percent >= 0.25 ? 'passed' : '')}>|</div>
+              <div className={"symbol three " + (remainingSeconds < 6 || percent >= 0.375 ? 'passed' : '')}>|</div>
+              <div className={"symbol four " + (remainingSeconds < 5 || percent >= 0.5 ? 'passed' : '')}>|</div>
+              <div className={"symbol five " + (remainingSeconds < 4 || percent >= 0.625 ? 'passed' : '')}>|</div>
+              <div className={"symbol six " + (remainingSeconds < 3 || percent >= 0.75 ? 'passed' : '')}>|</div>
+              <div className={"symbol seven " + (remainingSeconds < 2 || percent >= 0.875 ? 'passed' : '')}>|</div>
+              <div className={"symbol eight " + (remainingSeconds < 1 || percent >= 1 ? 'passed' : '')}>|</div>
             </section>
-            <section className="board-middle">
-             {toggleStartStop()}
+            <section className="board">
+              <section className="board-top">
+                <div className="board-btn" onClick={() => changeState(states.pomodoro, false)}>
+                  <TimerIcon fontSize="large" htmlColor="#ffffff" />
+                </div>
+                <div className="board-btn" onClick={() => changeState(states.pauseShort, false)}>
+                  <FreeBreakfastIcon fontSize="large"  htmlColor="#ffffff" />
+                </div>
+                <div className="board-btn" onClick={() => changeState(states.pauseLong, false)}>
+                  <FastfoodRoundedIcon fontSize="large" htmlColor="#ffffff" />
+                </div>
+              </section>
+              <section className="board-middle">
+              {toggleRunning()}
+              </section>
+              <section className="board-bottom">
+                {pomodoroCount} Pomodoros
+              </section>
             </section>
-            <section className="board-bottom">
-              {pomodoroCount} Pomodoros
-            </section>
-          </section>
           </section>
         </section>
       </main>
-      <footer></footer>
     </div>
   );
 };
